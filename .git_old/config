@@ -1,0 +1,14 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "old-origin"]
+	url = git@github.com:RedHat-EMEA-SSA-Team/hetzner-ocp4.git
+	fetch = +refs/heads/*:refs/remotes/old-origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+[remote "origin"]
+	url = ssh://git@gitlab.consulting.redhat.com:2222/services-germany/graduates-mock-project/hetzner-setup/mock-cluster-setup.git
+	fetch = +refs/heads/*:refs/remotes/origin/*

@@ -1,0 +1,3 @@
+---
+listen_address: "{{ hetzner_ip }}"
+listen_address_ipv6: "TBD"

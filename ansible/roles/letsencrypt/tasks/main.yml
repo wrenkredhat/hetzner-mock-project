@@ -1,0 +1,262 @@
+---
+- name: Check variables
+  import_tasks: check-variables.yml
+
+- name: Create certificates dir
+  file:
+    path: "{{ le_certificates_dir }}/{{ le_public_domain }}"
+    state: directory
+    mode: 0755
+
+- name: Create account-key
+  openssl_privatekey:
+    path: "{{ le_certificates_dir }}/account.key"
+    type: RSA
+    size: 4096
+
+- name: Fetch letsencrypt root ca
+  get_url:
+    url: https://letsencrypt.org/certs/isrgrootx1.pem.txt
+    dest: "{{ le_certificates_dir }}/isrgrootx1.pem"
+
+- name: Create {{ le_public_domain }}.key
+  openssl_privatekey:
+    path: "{{ le_certificates_dir }}/{{ le_public_domain }}/cert.key"
+    type: RSA
+    size: 4096
+
+- name: Generate an OpenSSL Certificate Signing Request with subjectAltName extension
+  openssl_csr:
+    path: "{{ le_certificates_dir }}/{{ le_public_domain }}/cert.csr"
+    privatekey_path: "{{ le_certificates_dir }}/{{ le_public_domain }}/cert.key"
+    subject_alt_name: "DNS:*.apps.{{ le_public_domain }},DNS:api.{{ le_public_domain }}"
+
+- name: Create a challenge for {{ le_public_domain }} using a account key file.
+  acme_certificate:
+    account_key_src: "{{ le_certificates_dir }}/account.key"
+    account_email: "{{ le_letsencrypt_account_email }}"
+    src: "{{ le_certificates_dir }}/{{ le_public_domain }}/cert.csr"
+    cert: "{{ le_certificates_dir }}/{{ le_public_domain }}/cert.crt"
+    challenge: dns-01
+    acme_directory: "{{ le_acme_directory }}"
+    acme_version: 2
+    # Renew if the certificate is at least 30 days old
+    remaining_days: 60
+    terms_agreed: yes
+  register: sample_com_challenge
+
+- name: Debug var only with -vv
+  debug:
+    var: sample_com_challenge
+    verbosity: 2
+
+- name: Set challenge_data_dns
+  set_fact:  # noqa no-handler
+    challenge_data_dns: "{{ sample_com_challenge.challenge_data_dns }}"
+  when: sample_com_challenge is changed
+
+- name: Create DNS record at CloudFlare
+  cloudflare_dns:
+    zone: "{{ le_cloudflare_zone }}"
+    record: "{{ item.0.key }}"
+    # 1 for automatic
+    ttl: 1
+    type: TXT
+    value: "{{ item.1 }}"
+    account_email: "{{ le_cloudflare_account_email }}"
+    account_api_token: "{{ le_cloudflare_account_api_token }}"
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "cloudflare" and sample_com_challenge is changed
+
+- name: Create DNS record at Route53
+  route53:
+    state: present
+    zone: "{{ le_aws_zone }}"
+    record: "{{ item.0.key }}"
+    type: TXT
+    ttl: 60
+    value: "\"{{ item.1 }}\""
+    wait: yes
+    aws_access_key: "{{ le_aws_access_key }}"
+    aws_secret_key: "{{ le_aws_secret_key }}"
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "route53" and sample_com_challenge is changed
+
+- name: Create DNS record at GCP
+  gcp_dns_resource_record_set:
+    name: "{{ item.0.key }}."
+    type: TXT
+    ttl: 60
+    managed_zone:
+      name: "{{ le_gcp_managed_zone_name }}"
+      dnsName: "{{ le_gcp_managed_zone_domain }}"
+    target:
+      - "{{ item.1 }}"
+    project: "{{ le_gcp_project }}"
+    auth_kind: serviceaccount
+    service_account_file: "{{ le_gcp_serviceaccount_file }}"
+    state: present
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "gcp" and sample_com_challenge is changed
+
+- name: Create DNS record at Azure
+  azure_rm_dnsrecordset:
+    client_id: "{{ le_azure_client_id }}"
+    secret: "{{ le_azure_secret }}"
+    subscription_id: "{{ le_azure_subscription_id }}"
+    tenant: "{{ le_azure_tenant }}"
+    time_to_live: 60
+    resource_group: "{{ le_azure_resource_group }}"
+    relative_name: "{{ item.0.key | replace(public_domain, '') | regex_replace('\\.$', '') }}"
+    zone_name: "{{ public_domain }}"
+    record_type: TXT
+    records:
+      - entry: "{{ item.1 }}"
+    state: present
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "azure" and sample_com_challenge is changed
+
+- name: Create DNS record at TransIP
+  uri:
+    url: "https://api.transip.nl/v6/domains/{{ transip_zone }}/dns"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ transip_token }}"
+    body_format: json
+    body:
+      dnsEntry:
+        name: "{{ item.0.key | replace( transip_zone ,'') | regex_replace('\\.$', '') }}"
+        expire: 60
+        type: TXT
+        content: "{{ item.1 }}"
+    status_code: 201
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "transip" and sample_com_challenge is changed
+
+- name: DNS record info
+  debug:    # noqa no-handler
+    msg: "{{ item.0.key }} TXT {{ item.1 }}"
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: sample_com_challenge is changed
+
+- name: Include DNS provider
+  include: "create-{{ le_dns_provider }}.yml"
+  when:
+    - le_dns_provider in ['hetzner', 'digitalocean']
+    - sample_com_challenge is changed
+
+- name: Pause, wait for DNS changes
+  pause:   # noqa no-handler
+    seconds: 120
+  when: sample_com_challenge is changed
+
+- name: Let the challenge be validated and retrieve the cert and intermediate certificate
+  acme_certificate:  # noqa no-handler
+    account_key_src: "{{ le_certificates_dir }}/account.key"
+    account_email: "{{ le_letsencrypt_account_email }}"
+    src: "{{ le_certificates_dir }}/{{ le_public_domain }}/cert.csr"
+    cert: "{{ le_certificates_dir }}/{{ le_public_domain }}/cert.crt"
+    fullchain: "{{ le_certificates_dir }}/{{ le_public_domain }}/fullchain.crt"
+    chain: "{{ le_certificates_dir }}/{{ le_public_domain }}/intermediate.crt"
+    challenge: dns-01
+    acme_version: 2
+    acme_directory: "{{ le_acme_directory }}"
+    remaining_days: 60
+    data: "{{ sample_com_challenge }}"
+  when: sample_com_challenge is changed
+
+- name: Delete DNS record at CloudFlare
+  cloudflare_dns:
+    zone: "{{ le_cloudflare_zone }}"
+    record: "{{ item.0.key }}"
+    # 1 for automatic
+    ttl: 1
+    type: TXT
+    value: "{{ item.1 }}"
+    account_email: "{{ le_cloudflare_account_email }}"
+    account_api_token: "{{ le_cloudflare_account_api_token }}"
+    state: absent
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "cloudflare" and sample_com_challenge is changed
+
+- name: Delete DNS record at Route53
+  route53:
+    state: absent
+    zone: "{{ le_aws_zone }}"
+    record: "{{ item.0.key }}"
+    type: TXT
+    ttl: 60
+    value: "\"{{ item.1 }}\""
+    wait: yes
+    aws_access_key: "{{ le_aws_access_key }}"
+    aws_secret_key: "{{ le_aws_secret_key }}"
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "route53" and sample_com_challenge is changed
+
+- name: Delete DNS record at GCP
+  gcp_dns_resource_record_set:
+    name: "{{ item.0.key }}."
+    managed_zone:
+      name: "{{ le_gcp_managed_zone_name }}"
+      dnsName: "{{ le_gcp_managed_zone_domain }}"
+    type: TXT
+    ttl: 60
+    target:
+      - "{{ item.1 }}"
+    project: "{{ le_gcp_project }}"
+    auth_kind: serviceaccount
+    service_account_file: "{{ le_gcp_serviceaccount_file }}"
+    state: absent
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "gcp" and sample_com_challenge is changed
+
+- name: Delete DNS record at Azure
+  azure_rm_dnsrecordset:
+    client_id: "{{ le_azure_client_id }}"
+    secret: "{{ le_azure_secret }}"
+    subscription_id: "{{ le_azure_subscription_id }}"
+    tenant: "{{ le_azure_tenant }}"
+    resource_group: "{{ le_azure_resource_group }}"
+    relative_name: "{{ item.0.key | replace(public_domain, '') | regex_replace('\\.$', '') }}"
+    zone_name: "{{ public_domain }}"
+    record_type: TXT
+    state: absent
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "azure" and sample_com_challenge is changed
+
+- name: Delete DNS record at TransIP
+  uri:
+    url: "https://api.transip.nl/v6/domains/{{ transip_zone }}/dns"
+    method: DELETE
+    headers:
+      Authorization: "Bearer {{ transip_token }}"
+    body_format: json
+    body:
+      dnsEntry:
+        name: "{{ item.0.key | replace( transip_zone , '') | regex_replace('\\.$', '') }}"
+        expire: 60
+        type: TXT
+        content: "{{ item.1 }}"
+    status_code: 204
+  register: record
+  loop: "{{ challenge_data_dns | default({}) | dict2items | subelements('value') }}"
+  when: le_dns_provider == "transip" and sample_com_challenge is changed
+
+- name: Include DNS provider
+  include: "destroy-{{ le_dns_provider }}.yml"
+  when:
+    - le_dns_provider in ['hetzner', 'digitalocean']
+    - sample_com_challenge is changed
+
+- name: concat root ca and intermediate
+  shell: "cat {{ le_certificates_dir }}/isrgrootx1.pem {{ le_certificates_dir }}/{{ le_public_domain }}/intermediate.crt >> {{ le_certificates_dir }}/{{ le_public_domain }}/ca-bundle.pem"   # noqa line-length
+  args:
+    creates: "{{ le_certificates_dir }}/{{ le_public_domain }}/ca-bundle.pem"

@@ -1,0 +1,4 @@
+---
+
+- name: Include DNS provider
+  include: "destroy-{{ pd_provider }}.yml"

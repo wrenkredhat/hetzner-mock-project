@@ -1,0 +1,5 @@
+# this should be encrypted of course
+vault_hetzner_robot_username: 'TODO'
+vault_hetzner_robot_password: 'TODO'
+vault_hetzner_storage_box_user: 'TODO'
+vault_hetzner_storage_box_password: 'TODO'

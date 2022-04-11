@@ -1,0 +1,2 @@
+[hetzner]
+195.201.160.162 ansible_user=root

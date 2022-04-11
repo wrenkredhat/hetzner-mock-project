@@ -1,0 +1,135 @@
+---
+- name: Check required variables
+  assert:
+    that:
+      - lookup('vars',item) is defined
+    msg: "{{ item }} is not defined!"
+  with_items:
+    - le_dns_provider
+    - le_public_domain
+    - le_letsencrypt_account_email
+
+- name: Check required Route53 variables
+  assert:
+    that:
+      - lookup('vars',item) is defined
+    msg: "{{ item }} is not defined!"
+  with_items:
+    - le_aws_access_key
+    - le_aws_secret_key
+    - le_aws_zone
+  when: le_dns_provider == "route53"
+
+- name: Check required CloudFlare variables
+  assert:
+    that:
+      - lookup('vars',item) is defined
+    msg: "{{ item }} is not defined!"
+  with_items:
+    - le_cloudflare_account_email
+    - le_cloudflare_account_api_token
+    - le_cloudflare_zone
+  when: le_dns_provider == "cloudflare"
+
+- name: Check required GCP variables
+  assert:
+    that:
+      - lookup('vars',item) is defined
+    msg: "{{ item }} is not defined!"
+  with_items:
+    - le_gcp_project
+    - le_gcp_managed_zone_name
+    - le_gcp_managed_zone_domain
+  when: le_dns_provider == "gcp"
+
+- name: Check required Azure variables
+  assert:
+    that:
+      - lookup('vars',item) is defined
+    msg: "{{ item }} is not defined!"
+  with_items:
+    - le_azure_client_id
+    - le_azure_secret
+    - le_azure_subscription_id
+    - le_azure_tenant
+    - le_azure_resource_group
+  when: le_dns_provider == "azure"
+
+- name: Check required Hetzner variables
+  assert:
+    that:
+      - lookup('vars',item) is defined
+    msg: "{{ item }} is not defined!"
+  with_items:
+    - le_hetzner_account_api_token
+    - le_hetzner_zone
+  when: le_dns_provider == "hetzner"
+
+- name: Debug var only with -vv CloudFlare
+  debug:
+    msg: "{{ item }}={{ lookup('vars',item) }}"
+    verbosity: 2
+  with_items:
+    - le_letsencrypt_account_email
+    - le_cloudflare_account_api_token
+    - le_cloudflare_zone
+    - le_public_domain
+    - le_certificates_dir
+    - le_public_domain
+    - le_acme_directory
+  when: le_dns_provider == "cloudflare"
+
+- name: Debug var only with -vv for Route53
+  debug:
+    msg: "{{ item }}={{ lookup('vars',item) }}"
+    verbosity: 2
+  with_items:
+    - le_letsencrypt_account_email
+    - le_aws_access_key
+    - le_aws_secret_key
+    - le_public_domain
+    - le_certificates_dir
+    - le_public_domain
+    - le_acme_directory
+  when: le_dns_provider == "route53"
+
+- name: Debug var only with -vv for GCP
+  debug:
+    msg: "{{ item }}={{ lookup('vars',item) }}"
+    verbosity: 2
+  with_items:
+    - le_letsencrypt_account_email
+    - le_gcp_project
+    - le_gcp_managed_zone_name
+    - le_gcp_managed_zone_domain
+    - le_public_domain
+    - le_certificates_dir
+    - le_public_domain
+    - le_acme_directory
+  when: le_dns_provider == "gcp"
+
+- name: Debug var only with -vv for Azure
+  debug:
+    msg: "{{ item }}={{ lookup('vars',item) }}"
+    verbosity: 2
+  with_items:
+    - le_letsencrypt_account_email
+    - le_azure_client_id
+    - le_azure_secret
+    - le_azure_subscription_id
+    - le_azure_tenant
+    - le_azure_resource_group
+    - le_public_domain
+    - le_certificates_dir
+    - le_public_domain
+    - le_acme_directory
+  when: le_dns_provider == "azure"
+
+- name: Debug var only with -vv for Hetzner
+  debug:
+    msg: "{{ item }}={{ lookup('vars',item) }}"
+    verbosity: 2
+  with_items:
+    - le_hetzner_account_api_token
+    - le_hetzner_zone
+  when: le_dns_provider == "hetzner"
