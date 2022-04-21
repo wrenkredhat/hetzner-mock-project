@@ -12,10 +12,10 @@
     mode: 0644
 
 - name: Save install-config from deletion
-  copy:
-    dest: "{{ openshift_install_dir }}/install-config.yaml.original"
+  fetch:
     src: "{{ openshift_install_dir }}/install-config.yaml"
-    mode: 0644
+    dest: "./install-config.yaml.original/"
+    flat: yes
 
 - name: Create manifest files
   command: "{{ openshift_install_command }} create manifests --dir={{ openshift_install_dir }}"

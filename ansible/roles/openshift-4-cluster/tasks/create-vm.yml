@@ -32,6 +32,7 @@
 
 - name: Copy ignition {{ vm_instance_name }}
   copy:
+    remote_src: true
     src: "{{ vm_ignition_file }}"
     dest: "/var/lib/libvirt/images/{{ vm_instance_name }}.ign"
     mode: '0644'

@@ -28,8 +28,21 @@
 - name: get root private key
   fetch:
     src: "{{ ssh_public_key_location }}.pub"
-    dest: "{{ ssh_public_key_location_local }}.pub"
-    
+    dest: "{{ ssh_public_key_location_local }}.pub/"
+    flat: yes
+
+#- name: debug
+#  shell: |
+#    ls .
+#    # ls -l "{{ ssh_public_key_location_local }}.pub"
+#    pwd
+#  register: command_output
+
+- debug: msg="GetKey:"
+
+#- pause:
+#    prompt: "HelloHello"
+
 # Enable ip forwarding globally - fixed issue #35
 - name: Check /etc/systemd/network/10-mainif.network
   stat:
@@ -45,5 +58,5 @@
   when: stat_result.stat.exists
 
 # Install ansible collection for digitalocean dns provider
-- name: Ansible collection community.digitalocean
-  command: "ansible-galaxy collection install community.digitalocean"
+#- name: Ansible collection community.digitalocean
+#  command: "ansible-galaxy collection install community.digitalocean"

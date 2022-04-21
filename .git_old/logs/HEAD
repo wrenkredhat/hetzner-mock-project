@@ -1,4 +1,0 @@
-0000000000000000000000000000000000000000 0b9aa1505533e07c3383f49394a4a71db8fe486b wrenk <wrenk@redhat.com> 1648471838 +0200	clone: from git@github.com:RedHat-EMEA-SSA-Team/hetzner-ocp4.git
-0b9aa1505533e07c3383f49394a4a71db8fe486b 0df11658bdb56b8ec3eabe5fecfec8aee46a242f wrenk <wrenk@redhat.com> 1649147044 +0200	commit: fst plybook runs
-0df11658bdb56b8ec3eabe5fecfec8aee46a242f e329c67b722ad5cf96ff885ffc6357fd9816429e wrenk <wrenk@redhat.com> 1649147299 +0200	commit: rm huhu
-e329c67b722ad5cf96ff885ffc6357fd9816429e 17731dd3e439accbe6ae8dcff63d00c103009251 wrenk <wrenk@redhat.com> 1649667281 +0200	commit: save

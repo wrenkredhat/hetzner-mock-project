@@ -134,12 +134,12 @@
   failed_when: output.rc != 0
   changed_when: '"updated" in output.stdout'
 
-- name: Wait 300 seconds for port 22 to become open
+- name: Wait 600 seconds for port 22 to become open
   wait_for:
     port: 22
     host: '{{ inventory_hostname }}'
     delay: 10
-    timeout: 300
+    timeout: 600
   connection: local
 
 - name: Check ansible_python_interpreter
@@ -163,9 +163,10 @@
     name: sshd.service
     state: restarted
 
-- name: Shell install python3
-  shell: |
-    sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
-    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-    yum -y update
-    yum -y install python3 ansible
+#- name: Shell install python3
+#  shell: |
+#    #sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+#    #sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+#    #yum -y update
+#    yum -y install python3 ansible
+

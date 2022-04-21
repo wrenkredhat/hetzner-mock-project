@@ -79,7 +79,7 @@
 - name: Create ignition files
   include: create-ignition.yml
   vars:
-    ssh_public_key: "{{ lookup('file', '{{ ssh_public_key_location_local }}.pub') }}"
+    ssh_public_key: "{{ lookup('file', '{{ ssh_public_key_location_local }}.pub/id_rsa.pub') }}"
   tags: ignition
 
 - name: Create bootstrap node

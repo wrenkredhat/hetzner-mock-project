@@ -18,7 +18,7 @@ ls $AV_PATH
 echo $INVENTORY
 ls $INVENTORY
 
-ansible-playbook  -i $INVENTORY ./ansible/setup-reset-node.yml
+ansible-playbook  $2  -i $INVENTORY ./ansible/setup-reset-node.yml
 
 #ansible-playbook -i $INVENTORY ansible/00-provision-hetzner.yml
 #ansible-playbook -i $INVENTORY ansible/00-provision-hetzner.yml

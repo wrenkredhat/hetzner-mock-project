@@ -1,6 +1,7 @@
 ---
 
-openshift_install_dir: "{{ playbook_dir }}/../{{ cluster_name }}"
+#openshift_install_dir: "{{ playbook_dir }}/../{{ cluster_name }}"
+openshift_install_dir: "./{{ cluster_name }}"
 ssh_public_key_location: "/root/.ssh/id_rsa"
 ssh_public_key_location_local: "./idrsa"
 
