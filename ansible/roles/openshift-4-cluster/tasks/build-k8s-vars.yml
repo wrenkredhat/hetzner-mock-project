@@ -34,7 +34,8 @@
 - name:  Pause 
   pause:
     prompt: "pls press Return"
-
+    delay: 60
+    
 - name: Select cluster & user
   set_fact:
     cluster: "{{ kubeconfig | json_query('clusters[?name==`'~ cluster_name ~'`].cluster') | first }}"

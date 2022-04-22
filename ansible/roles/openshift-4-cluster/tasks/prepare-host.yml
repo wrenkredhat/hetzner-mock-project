@@ -38,11 +38,6 @@
 #    pwd
 #  register: command_output
 
-- debug: msg="GetKey:"
-
-#- pause:
-#    prompt: "HelloHello"
-
 # Enable ip forwarding globally - fixed issue #35
 - name: Check /etc/systemd/network/10-mainif.network
   stat:
