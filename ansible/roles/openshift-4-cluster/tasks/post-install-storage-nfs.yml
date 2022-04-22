@@ -61,6 +61,9 @@
   command: 'exportfs -ra'
   tags: exports
 
+- name: dbg
+  debug:
+    msg: "k8s_kubeconfig: {{ k8s_kubeconfig }}"
 
 - name: Create infra-registry pv
   k8s:

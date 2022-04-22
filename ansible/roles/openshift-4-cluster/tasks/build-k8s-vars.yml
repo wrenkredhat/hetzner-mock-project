@@ -6,12 +6,12 @@
     path: "{{ openshift_install_dir }}/config/"
     mode: 0755
 
-#- name: Copy kubeconfig
-#  fetch:
-# #  remote_src: yes
-#    src: "{{ openshift_install_dir }}/auth/kubeconfig"
-#    dest: "kubeconfig"
-#    mode: 0644
+- name: Copy kubeconfig
+  copy:
+    remote_src: yes
+    src: "{{ openshift_install_dir }}/auth/kubeconfig"
+    dest: "{{ openshift_install_dir }}/config/kubeconfig"
+    mode: 0644
 
 - name: get contents of file
   command: cat "{{ openshift_install_dir }}/auth/kubeconfig"
@@ -23,6 +23,17 @@
 
     kubeconfig: "{{ file.stdout | from_yaml }}"
 
+- name: debug
+  debug:
+    msg: "file.stdout: {{ file.stdout }}"
+
+- name: debug
+  debug:
+    msg: "kubeconfig: {{ kubeconfig }}"
+
+- name:  Pause 
+  pause:
+    prompt: "pls press Return"
 
 - name: Select cluster & user
   set_fact:
