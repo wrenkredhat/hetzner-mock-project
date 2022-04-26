@@ -17,7 +17,7 @@
 
 - name: Check rescue mode
   uri:
-    url: "https://robot-ws.your-server.de/boot/{{ hetzner_ip }}/rescue"
+    url: "https://robot-ws.your-server.de/boot/{{ inventory_hostname }}/rescue"
     method: GET
     user: "{{ hetzner_webservice_username }}"
     password: "{{ hetzner_webservice_password }}"
@@ -29,7 +29,7 @@
 - name: Activate rescue mode
   when: not rescue.json.rescue.active
   uri:
-    url: "https://robot-ws.your-server.de/boot/{{ hetzner_ip }}/rescue"
+    url: "https://robot-ws.your-server.de/boot/{{ inventory_hostname }}/rescue"
     method: POST
     user: "{{ hetzner_webservice_username }}"
     password: "{{ hetzner_webservice_password }}"
@@ -43,7 +43,7 @@
 
 - name: Execute hardware reset
   uri:
-    url: "https://robot-ws.your-server.de/reset/{{ hetzner_ip }}"
+    url: "https://robot-ws.your-server.de/reset/{{ inventory_hostname }}"
     method: POST
     user: "{{ hetzner_webservice_username }}"
     password: "{{ hetzner_webservice_password }}"
@@ -137,9 +137,9 @@
 - name: Wait 600 seconds for port 22 to become open
   wait_for:
     port: 22
-    connect_timeout: 60
+    connect_timeout: 120
     host: '{{ inventory_hostname }}'
-    delay: 10
+    delay: 120
     timeout: 600
   connection: local
 

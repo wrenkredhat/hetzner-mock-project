@@ -5,7 +5,7 @@ TEMP_DIR=$(mktemp -d)
 
 echo '
 export HETZNER_HOSTNAME="{{ hetzner_hostname }}"
-export HETZNER_IP="{{ hetzner_ip }}"
+export HETZNER_IP="{{ inventory_hostname }}"
 ' >> $TEMP_DIR/env.j2
 
 export ANSIBLE_LOCALHOST_WARNING=false

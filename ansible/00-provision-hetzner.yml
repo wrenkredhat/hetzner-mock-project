@@ -13,14 +13,28 @@
 #        name: "{{ hetzner_ip }}"
 
 - name: install hetzner server
-  hosts: all
+  hosts: hetzner
   gather_facts: no
   remote_user: root
   vars_files:
     - ../cluster.yml
   tasks:
+
+    - name: Check that the markerfile exists
+      stat:
+        path: "{{ cluster_install_in_progress_marker }}"
+      register: stat_result
+ 
+    - debug:
+       msg: "{{ stat_result.stat.exists }}"
+
+    - name: Pause
+      pause:
+        prompt: "xxx"
+
     - name: provision hetzner root server
       import_role:
         name: provision-hetzner
       tags:
         - provision-hetzner
+      when: not stat_result.stat.exists

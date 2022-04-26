@@ -13,3 +13,7 @@
       import_role:
         name: openshift-4-cluster
         tasks_from: create.yml
+
+    - file:
+        name: "{{ cluster_install_in_progress_marker }}"
+        state: absent

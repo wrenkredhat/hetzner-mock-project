@@ -1,2 +1,6 @@
 [hetzner]
 195.201.160.162 ansible_user=root
+
+[hetzner:vars]
+  cluster_install_in_progress_marker: "./cluster_install_in_progress.txt"
+#  hetzner_ip: 195.201.160.162

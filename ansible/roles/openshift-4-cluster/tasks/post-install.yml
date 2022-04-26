@@ -12,11 +12,23 @@
 #  delay: 60
 #  until: bootstrap_status.rc == 0
 
-- name: wait for installation to complete
-  command: "/opt/openshift-install-{{ openshift_version }}/openshift-install wait-for bootstrap-complete --dir {{ openshift_install_dir }} --log-level debug"
-  register: complete_install_result
-  retries: 1
-  until: complete_install_result.stderr is search("It is now safe to remove the bootstrap resources")
+- name: wait for bootstrap to complete
+  async: 3600
+  poll: 60
+  command: "sh -c '/opt/openshift-install-{{ openshift_version }}/openshift-install wait-for bootstrap-complete --dir {{ openshift_install_dir }} --log-level debug'"
+  register: bootstrap_status
+  retries: 60
+  delay: 180
+  until: bootstrap_status.rc == 0
+
+- name: Wait until the string "It is now safe to remove the bootstrap resources" is in the file {{ openshift_install_dir }}/.openshift_install.log before continuing
+  wait_for:
+    path: "{{ openshift_install_dir }}/.openshift_install.log"
+    search_regex: "It is now safe to remove the bootstrap resources"
+    connect_timeout: 120
+    sleep: 10
+    delay: 10
+    timeout: 1800
 
 - name: Destroy bootstrap node
   include: destroy-vm.yml
@@ -66,13 +78,31 @@
   when: storage_nfs
   tags: storage
 
-- name: Waiting installation to complete
-  command: "/opt/openshift-install-{{ openshift_version }}/openshift-install wait-for install-complete --dir {{ openshift_install_dir }}"
+#- name: Waiting installation to complete
+#  command: "/opt/openshift-install-{{ openshift_version }}/openshift-install wait-for install-complete --dir {{ openshift_install_dir }}"
+#  register: install_status
+#  retries: 60
+#  delay: 60
+#  until: install_status.rc == 0
+#  ignore_errors: yes
+
+- name: wait for install to complete
+  async: 3600
+  poll: 60
+  command: "sh -c '/opt/openshift-install-{{ openshift_version }}/openshift-install wait-for install-complete --dir {{ openshift_install_dir }} --log-level debug &'"
   register: install_status
   retries: 60
-  delay: 60
+  delay: 180
   until: install_status.rc == 0
-  ignore_errors: yes
+
+- name: Wait until the string "Login to the console with user" is in the file {{ openshift_install_dir }}/.openshift_install.log before continuing
+  wait_for:
+    path: "{{ openshift_install_dir }}/.openshift_install.log"
+    search_regex: "Login to the console with user"
+    connect_timeout: 120
+    sleep: 10
+    delay: 10
+    timeout: 2400
 
 ###########################################################################################
 # Install letsencrypt certificates
@@ -295,3 +325,4 @@
   tags:
     - post-install
     - lastmessage
+  delegate_to: 127.0.0.1
