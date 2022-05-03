@@ -89,7 +89,7 @@
 - name: wait for install to complete
   async: 3600
   poll: 60
-  command: "sh -c '/opt/openshift-install-{{ openshift_version }}/openshift-install wait-for install-complete --dir {{ openshift_install_dir }} --log-level debug &'"
+  command: "sh -c '/opt/openshift-install-{{ openshift_version }}/openshift-install wait-for install-complete --dir {{ openshift_install_dir }} --log-level debug'"
   register: install_status
   retries: 60
   delay: 180
